@@ -37,6 +37,7 @@ contract MCFA {
 contract ControllerTest is Test {
     WrpDeployment deployment;
     MCFA cfa;
+    address[3] init_owners;
 
     function setUp() external {
         MimeInit memory _mimeInit;
@@ -52,8 +53,10 @@ contract ControllerTest is Test {
         _poolInit.funding = address(new MFunding(["STABLE_MOCK", "mSTB"]));
 
         OsmoticParams memory _p;
+        init_owners=[makeAddr("OW1"),makeAddr("OW2"),makeAddr("OW3")];
 
         deployment = new WrpDeployment(_mimeInit, _poolInit, _p);
+        deployment.createController(init_owners);
 
         {
             (, BeaconProxy _c, ) = deployment.getController();
