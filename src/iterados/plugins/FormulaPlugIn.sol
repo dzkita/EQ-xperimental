@@ -15,7 +15,7 @@ struct FormulaParams {
 }
 
 abstract contract FormulaPlugIn is Initializable {
-    UD60x18 public immutable ONE = convert(1);
+    UD60x18 public immutable ONE = ud(1);
     UD60x18 public immutable ZER0 = ud(0);
     /**
      * @custom:bouderies (min,max) reghartding `minStakeRatio`
@@ -32,9 +32,9 @@ abstract contract FormulaPlugIn is Initializable {
         
     ->    1_341_527_745_770_263_265_853_480_621_926_184_377_123_303_681_756_299
      */
-    UD60x18 immutable TIME_BOUND = ud(0x1b70380);
-    UD60x18 immutable UNIT = ud(0xde0b6b3a7640000);
-    UD60x18 immutable MAX_FLOW =
+    UD60x18 public immutable TIME_BOUND = ud(0x1b70380);
+    UD60x18 public immutable UNIT = ud(0xde0b6b3a7640000);
+    UD60x18 public immutable MAX_FLOW =
         ud(0x395e918a3d0c184f340b6bdc65da7f8b674ec190c8b);
     /**
      *  @custom:notice 1 UNIT == 1e18 
@@ -111,7 +111,6 @@ abstract contract FormulaPlugIn is Initializable {
         }
     }
 
-
     /**
      * @notice Get current
      * @dev rate = ( lastRate * [alpha ^ time]) + [_targetRate * (1 - alpha ^ time)]
@@ -165,13 +164,13 @@ abstract contract FormulaPlugIn is Initializable {
         Lower
     }
 
-    error VAR_EXCEEDS_BOUNDS(
+    error VAR_OUTISDE_BOUNDS(
         Bound _boundExceeded,
         UD60x18 _maxVal,
         UD60x18 _valCalc
     );
 
-     /**
+    /**
      * Limitaciones del maxFlow (min,max)
      * El flow limite tiene que ser 333 dias de flow 
      * min : por lo menos 1 unidad  
@@ -182,38 +181,38 @@ abstract contract FormulaPlugIn is Initializable {
     function _maxFlowBound(
         uint176 _maxFlow
     ) internal view returns (UD60x18 _mxflw) {
-        _mxflw = ud((_maxFlow * 1e18) + 1);
-        if (MIN_FLOW_BOUND > _mxflw)
-            revert VAR_EXCEEDS_BOUNDS(Bound.Lower, MIN_FLOW_BOUND, _mxflw);
-        else if (MAX_FLOW < _mxflw)
-            revert VAR_EXCEEDS_BOUNDS(Bound.Upper, MAX_FLOW, _mxflw);
+        _mxflw = (ud(_maxFlow) * UNIT) + ONE;
+        if (MAX_FLOW < _mxflw)
+            revert VAR_OUTISDE_BOUNDS(Bound.Upper, MAX_FLOW, _mxflw);
     }
-    
+
     function _decayBounds(uint _decay) internal view returns (UD60x18 _dc) {
-        _dc = ud((_decay * 1e18) + 1);
+        _dc = (ud(_decay) * UNIT) + ONE;
     }
 
     function _minRatioBounds(uint _ratio) internal view returns (UD60x18 _mrt) {
         _mrt = ud((_ratio * 1e15) + 1);
         if (MIN_STAKE_RATIO > _mrt)
-            revert VAR_EXCEEDS_BOUNDS(Bound.Lower, MIN_STAKE_RATIO, _mrt);
+            revert VAR_OUTISDE_BOUNDS(Bound.Lower, MIN_STAKE_RATIO, _mrt);
         else if (MAX_STAKE_RATIO < _mrt)
-            revert VAR_EXCEEDS_BOUNDS(Bound.Upper, MAX_STAKE_RATIO, _mrt);
+            revert VAR_OUTISDE_BOUNDS(Bound.Upper, MAX_STAKE_RATIO, _mrt);
     }
 
     function _setMaxFlow(uint176 _maxFlow) internal {
-        maxFlow = _maxFlowBound(_maxFlow);
+        UD60x18 _mf = _maxFlowBound(_maxFlow);
+        maxFlow = _mf;
         emit FormulaParamsChanged(
-            decay /*, drop.mulu(1e18),*/,
-            convert(_maxFlow),
+            decay /*, drop.mulu(UNIT),*/,
+            _mf,
             minStakeRatio
         );
     }
 
     function _setDecay(uint256 _decay) internal {
-        decay = _decayBounds(_decay);
+        UD60x18 _dc = _decayBounds(_decay);
+        decay = _dc;
         emit FormulaParamsChanged(
-            convert(_decay) /*, drop.mulu(1e18),*/,
+            _dc /*, drop.mulu(UNIT),*/,
             maxFlow,
             minStakeRatio
         );
